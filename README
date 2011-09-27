@@ -1,0 +1,4 @@
+Simple program that interactively builds plot of individual function of 
+utility for activity 2 from Chapter 7 from De Groot's book.
+
+matplotlib is used for plotting.
