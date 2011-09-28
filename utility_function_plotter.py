@@ -118,6 +118,7 @@ class UtilityFunctionBuilder(object):
             else:
                 print u"Controversial input data - x4 doesn't coincide " \
                         + "with x1. Please correct your choices.\n"
+                self._delta *= 1.5
 
     def _find_middle_point_and_utility(self, l_a, w_a, l_u, w_u):
         """

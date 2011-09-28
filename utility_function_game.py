@@ -31,6 +31,14 @@ class FortuneGame(object):
         self._best_x = None
         self._best_x_gain = None
 
+    def get_delta(self):
+        """Returns current value of delta (precision/step)."""
+        return self._delta
+
+    def set_delta(self, new_delta):
+        """Changes delta to a new value."""
+        self._delta = new_delta
+
     def play(self, left_margin, right_margin):
         """
         Plays the game
@@ -43,7 +51,8 @@ class FortuneGame(object):
         while True:
             x, gain = self._find_x_and_gain(left_margin, right_margin)
             if self._best_x:
-                ans = raw_input("Use best x so far (" + str(self._best_x) + "): ")
+                ans = raw_input("Use best x so far (" + str(self._best_x) \
+                        + "): ")
                 if ans == u"y":
                     return self._best_x
 
@@ -91,19 +100,27 @@ class FortuneGame(object):
         """
         x_info = u"Average gain: " + unicode(gain) + u"\n"
 
+        number_of_neighbours = 100
         l_sum = 0
         r_sum = 0
-        for i in range(1, 101):
-            l_sum += self._play_test_x(x - self._delta * i, l, r) 
-            r_sum += self._play_test_x(x + self._delta * i, l, r) 
-        l_avr = l_sum / 100
-        r_avr = r_sum / 100
+        for j in range(3):
+            for i in range(1, number_of_neighbours + 1):
+                l_x = x - self._delta * i
+                if l_x < l:
+                    l_x = l
+                r_x = x + self._delta * i
+                if r_x > r:
+                    r_x = r
+                l_sum += self._play_test_x(l_x, l, r) 
+                r_sum += self._play_test_x(r_x, l, r) 
+        l_avr = l_sum / (3 * number_of_neighbours)
+        r_avr = r_sum / (3 * number_of_neighbours)
 
         if l_avr >= gain:
             return x_info + u"Decrease x to improve the game's result."
         elif r_avr >= gain:
             return x_info + u"Increase x to improve the game's result."  
-        elif gain > self._best_x_gain:   
+        elif gain >= self._best_x_gain:   
             self._best_x_gain = gain
             self._best_x = x 
             return x_info + u"This x may be the best one."
