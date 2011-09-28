@@ -2,6 +2,7 @@
 
 from math import fabs
 import matplotlib.pyplot as plt
+from utility_function_game import FortuneGame, safely_read_float_value
 
 class UtilityFunctionBuilder(object):
     """
@@ -11,13 +12,14 @@ class UtilityFunctionBuilder(object):
 
     _left_margin - maximum amount of money the user can lose
     _right_margin - maximum amount of money the user can win
-    _delta - accuracy of plot building
+    _delta - precision of plot building
     """                                             
     def __init__(self):
         super(UtilityFunctionBuilder, self).__init__()
         self._left_margin = None
         self._right_margin = None
         self._delta = None
+        self._game = FortuneGame()
 
     def set_initial_values(self, l_margin, r_margin, delta):
         """Sets initial values of fields."""              
@@ -32,14 +34,17 @@ class UtilityFunctionBuilder(object):
 
     def _read_initial_values(self):
         """Reads initial values of fields from keyboard."""
-        l_margin = self._safely_read_float_value(
-                u"Input the sum you can lose: ")
+        l_margin = safely_read_float_value(
+                u"Input the sum you can lose: "
+                )
         if l_margin > 0:
             l_margin *= -1
-        r_margin = self._safely_read_float_value(
-                u"Input the sum you can win: ")
-        delta = self._safely_read_float_value(
-                u"Input accuracy: ")
+        r_margin = safely_read_float_value(
+                u"Input the sum you can win: "
+                )
+        delta = safely_read_float_value(
+                u"Input accuracy: "
+                )
         self.set_initial_values(l_margin, r_margin, delta)
 
     def _find_plot_points(self):
@@ -47,7 +52,8 @@ class UtilityFunctionBuilder(object):
         Finds points and utility values for plot of utility function.
         """
         result = self._find_plot_points_on_int(
-                self._left_margin, self._right_margin, 0, 1, self._delta)  
+                self._left_margin, self._right_margin, 0, 1, self._delta
+                )  
         result.append((self._right_margin, 1))
         result.insert(0, (self._left_margin, 0))  
         return result
@@ -60,7 +66,7 @@ class UtilityFunctionBuilder(object):
         win_a - right margin of interval.
         lose_u - utility in left margin.
         win_u - utility in right margin.
-        delta - accuracy.
+        delta - precision.
         """
         result = []
         
@@ -92,7 +98,9 @@ class UtilityFunctionBuilder(object):
                 data_for_recursion.insert(0, (lose_a, lose_u))
                 data_for_recursion = self._sort_results_list(
                         self._remove_duplicates_from_results_list(
-                            data_for_recursion))
+                            data_for_recursion
+                            )
+                        )
                 
                 for i in range(len(data_for_recursion) - 1):
                     if fabs(data_for_recursion[i][0] - \
@@ -102,7 +110,8 @@ class UtilityFunctionBuilder(object):
                             data_for_recursion[i+1][0],
                             data_for_recursion[i][1],
                             data_for_recursion[i+1][1],
-                            delta))
+                            delta
+                            ))
 
                 return self._sort_results_list(
                         self._remove_duplicates_from_results_list(result))
@@ -120,37 +129,12 @@ class UtilityFunctionBuilder(object):
         l_u - utility in left margin.
         w_u - utility in right margin.
         """
-        x = self._safely_read_float_from_interval(l_a, w_a)
+        print u"\nFinding value which utility is equivalent to utility of" \
+                " game (" + unicode(l_a) + u", " + unicode(w_a) \
+                + u") with probabilities (1/2, 1/2)"
+        x = self._game.play(l_a, w_a)
         u = 0.5 * (l_u + w_u)
         return x, u
-
-
-    def _safely_read_float_value(self, text):
-        """
-        Safely reads float value from keyboard and returns it as result.
-        Prints text as invitation message.
-        """
-        while True:
-            try:
-                variable = float(raw_input(text))
-            except ValueError:
-                print "You supplied incorrect value, must be number.\n"
-            else:
-                return variable
-
-    def _safely_read_float_from_interval(self, l_margin, r_margin):
-        """Reads float value from interval from keyboard."""
-        text = u"Input value which utility is equivalent to utility of" \
-                " game (" + unicode(l_margin) + u", " + unicode(r_margin) \
-                + u") with probabilities (1/2, 1/2): "
-        while True:
-            value = self._safely_read_float_value(text)
-            if value >= l_margin and value <= r_margin:
-                return value
-            else:
-                print u"Incorrect value - it must be between " + \
-                        unicode(l_margin) + u" and " + unicode(r_margin) \
-                        + "\n"
 
     def _sort_results_list(self, results_list):
         """Sorts results list (each element is tuple (point, utility))"""
