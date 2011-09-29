@@ -32,6 +32,11 @@ class UtilityFunctionBuilder(object):
         self._read_initial_values()
         self._build_plot_from_results_list(self._find_plot_points())
 
+    def semi_interactively_build_plot(self):
+        """Starting function that reads values and builds plot semi-auto."""
+        self._read_initial_values()
+        self._build_plot_from_results_list(self._find_plot_points(True))
+
     def _read_initial_values(self):
         """Reads initial values of fields from keyboard."""
         l_margin = safely_read_float_value(
@@ -47,26 +52,38 @@ class UtilityFunctionBuilder(object):
                 )
         self.set_initial_values(l_margin, r_margin, delta)
 
-    def _find_plot_points(self):
+    def _find_plot_points(self, semi_auto=False):
         """
         Finds points and utility values for plot of utility function.
+
+        semi_auto - whether the all values must be read from user or only \
+                first four
         """
-        result = self._find_plot_points_on_int(
-                self._left_margin, self._right_margin, 0, 1, self._delta
-                )  
+        if semi_auto:
+            result = self._find_plot_points_on_int(
+                self._left_margin, self._right_margin, 0, 1, self._delta,
+                True
+                )
+        else:
+            result = self._find_plot_points_on_int(
+                    self._left_margin, self._right_margin, 0, 1, self._delta
+                    )  
         result.append((self._right_margin, 1))
         result.insert(0, (self._left_margin, 0))  
         return result
 
-    def _find_plot_points_on_int(self, lose_a, win_a, lose_u, win_u, delta):
+    def _find_plot_points_on_int(self, lose_a, win_a, lose_u, win_u, delta,
+            semi_auto=False):
         """
         Finds points and utility values for plot on specified interval.
 
-        lose_a - left margin of interval.
-        win_a - right margin of interval.
-        lose_u - utility in left margin.
-        win_u - utility in right margin.
-        delta - precision.
+        lose_a - left margin of interval
+        win_a - right margin of interval
+        lose_u - utility in left margin
+        win_u - utility in right margin
+        delta - precision
+        semi_auto - whether the all values must be read from user or only \
+                first four
         """
         result = []
         
@@ -101,24 +118,109 @@ class UtilityFunctionBuilder(object):
                             data_for_recursion
                             )
                         )
-                
+                if semi_auto:
+                    proportions = self._find_proportions(
+                            result, lose_a, win_a
+                            )
                 for i in range(len(data_for_recursion) - 1):
                     if fabs(data_for_recursion[i][0] - \
                             data_for_recursion[i+1][0]) >= delta:
-                        result.extend(self._find_plot_points_on_int(
-                            data_for_recursion[i][0], 
-                            data_for_recursion[i+1][0],
-                            data_for_recursion[i][1],
-                            data_for_recursion[i+1][1],
-                            delta
-                            ))
+                        if semi_auto:
+                            result.extend(self._propagate_results(
+                                data_for_recursion[i][0], 
+                                data_for_recursion[i+1][0],
+                                data_for_recursion[i][1],
+                                data_for_recursion[i+1][1],
+                                delta,
+                                proportions
+                                ))
+                        else:
+                            result.extend(self._find_plot_points_on_int(
+                                data_for_recursion[i][0], 
+                                data_for_recursion[i+1][0],
+                                data_for_recursion[i][1],
+                                data_for_recursion[i+1][1],
+                                delta
+                                ))
 
                 return self._sort_results_list(
                         self._remove_duplicates_from_results_list(result))
             else:
-                print u"Controversial input data - x4 doesn't coincide " \
+                print u"\nControversial input data - x4 doesn't coincide " \
                         + "with x1. Please correct your choices.\n"
                 self._delta *= 1.5
+
+    def _propagate_results(self, lose_a, win_a, lose_u, win_u, delta, \
+            proportions):
+        """
+        Automatically finds points and utility values for plot on \
+                specified interval.
+
+        lose_a - left margin of interval
+        win_a - right margin of interval
+        lose_u - utility in left margin
+        win_u - utility in right margin
+        delta - precision   
+        proportions - list of proportions of x's
+        """
+        result = []
+
+        x1, ux1 = self._auto_find_middle_point_and_utility(
+                lose_a, win_a, lose_u, win_u, proportions[0]
+                )
+        result.append((x1, ux1))
+
+        x2, ux2 = self._auto_find_middle_point_and_utility(
+                lose_a, x1, lose_u, ux1, proportions[1]
+                )
+        result.append((x2, ux2))
+
+        x3, ux3 = self._auto_find_middle_point_and_utility(
+                x1, win_a, ux1, win_u, proportions[2]
+                )
+        result.append((x3, ux3))
+
+        x4, ux4 = self._auto_find_middle_point_and_utility(
+                x2, x3, ux2, ux3, proportions[3]
+                )
+        result.append((x4, ux4))
+
+        # result with starting points
+        data_for_recursion = list(result)
+        data_for_recursion.append((win_a, win_u))
+        data_for_recursion.insert(0, (lose_a, lose_u))
+        data_for_recursion = self._sort_results_list(
+                self._remove_duplicates_from_results_list(
+                    data_for_recursion
+                    )
+                )
+        
+        for i in range(len(data_for_recursion) - 1):
+            if fabs(data_for_recursion[i][0] - \
+                    data_for_recursion[i+1][0]) >= delta:
+                result.extend(self._propagate_results(
+                            data_for_recursion[i][0], 
+                            data_for_recursion[i+1][0],
+                            data_for_recursion[i][1],
+                            data_for_recursion[i+1][1],
+                            delta,
+                            proportions
+                            )) 
+
+        return self._sort_results_list(
+                self._remove_duplicates_from_results_list(result))
+
+    def _find_proportions(self, list_of_x, l_border, r_border):
+        """
+        Finds on which percents of interval found x's are located.
+        Returns list of percents.
+
+        list_of_x - x's found on interval
+        l_border - left margin of interval
+        r_border - right margin of interval
+        """
+        distance = r_border - l_border
+        return [(x[0] - l_border) / distance for x in list_of_x]
 
     def _find_middle_point_and_utility(self, l_a, w_a, l_u, w_u):
         """
@@ -135,6 +237,22 @@ class UtilityFunctionBuilder(object):
                 + u") with probabilities (1/2, 1/2)"
         x = self._game.play(l_a, w_a)
         u = 0.5 * (l_u + w_u)
+        return x, u
+
+    def _auto_find_middle_point_and_utility(self, lose_a, win_a, lose_u, \
+            win_u, proportion):
+        """
+        Automatically finds point and its utility which is equivalent to 
+        utility of interval.
+
+        l_a - left margin of interval.
+        w_a - right margin of interval.
+        l_u - utility in left margin.
+        w_u - utility in right margin. 
+        proportion - where the point is on inetrval.
+        """
+        x = lose_a + proportion * (win_a - lose_a)  
+        u = 0.5 * (lose_u + win_u)
         return x, u
 
     def _sort_results_list(self, results_list):
@@ -165,4 +283,4 @@ class UtilityFunctionBuilder(object):
       
 if __name__ == "__main__":
     function_builder = UtilityFunctionBuilder()
-    function_builder.interactively_build_plot()
+    function_builder.semi_interactively_build_plot()

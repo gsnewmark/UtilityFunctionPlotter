@@ -1,4 +1,7 @@
 Simple program that interactively builds plot of individual function of 
-utility for activity 2 from Chapter 7 from De Groot's book.
+utility for exercise 1 from Chapter 7 from De Groot's book.
+It uses exercise from the same chapter as a 'ruler'.
+
+Program has semi-automatic mode where user inputs only first four points.
 
 matplotlib is used for plotting.

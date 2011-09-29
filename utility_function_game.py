@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*- 
 
+from math import fabs
 from random import uniform, random
 
 class FortuneGame(object):
@@ -52,8 +53,8 @@ class FortuneGame(object):
             x, gain = self._find_x_and_gain(left_margin, right_margin)
             if self._best_x:
                 ans = raw_input("Use best x so far (" + str(self._best_x) \
-                        + "): ")
-                if ans == u"y":
+                        + ") (y/N)? ")
+                if ans == u"y" or ans == u"Y":
                     return self._best_x
 
     def _find_x_and_gain(self, left_margin, right_margin):
@@ -81,13 +82,14 @@ class FortuneGame(object):
         r - maximum gain of X
         """
         sum_of_gains = 0
-        for i in range(self._tests_number):
-            y = self._get_Y_value()
-            if y >= x:
-                sum_of_gains += y
-            else:
-                sum_of_gains += self._get_X_value(l, r)
-        return sum_of_gains / self._tests_number
+        for j in range(3):
+            for i in range(self._tests_number):
+                y = self._get_Y_value()
+                if y >= x:
+                    sum_of_gains += y
+                else:
+                    sum_of_gains += self._get_X_value(l, r)
+        return sum_of_gains / (self._tests_number * 3)
 
     def _estimate_x(self, x, gain, l, r):
         """
@@ -98,34 +100,69 @@ class FortuneGame(object):
         l - minimum gain of X 
         r - maximum gain of X  
         """
-        x_info = u"Average gain: " + unicode(gain) + u"\n"
+        #x_info = u"Average gain: " + unicode(gain) + u"\n"
+        x_info = "Try another x: "
 
         number_of_neighbours = 100
         l_sum = 0
+        l_cnt = 0
+        l_max = 0
         r_sum = 0
-        for j in range(3):
+        r_cnt = 0
+        r_max = 0
+        for j in range(5):
             for i in range(1, number_of_neighbours + 1):
                 l_x = x - self._delta * i
-                if l_x < l:
-                    l_x = l
+                if l_x >= l and l_x <= r:
+                    l_t = self._play_test_x(l_x, l, r)
+                    l_sum += l_t
+                    l_cnt += 1
+                    if l_t >= l_max:
+                        l_max = l_t
                 r_x = x + self._delta * i
-                if r_x > r:
-                    r_x = r
-                l_sum += self._play_test_x(l_x, l, r) 
-                r_sum += self._play_test_x(r_x, l, r) 
-        l_avr = l_sum / (3 * number_of_neighbours)
-        r_avr = r_sum / (3 * number_of_neighbours)
+                if r_x <= r and r_x >= l:
+                    r_t = self._play_test_x(r_x, l, r)
+                    r_sum += r_t 
+                    r_cnt += 1
+                    if r_t >= r_max:
+                        r_max = r_t
+        l_avr = l_sum / l_cnt
+        r_avr = r_sum / r_cnt
 
-        if l_avr >= gain:
-            return x_info + u"Decrease x to improve the game's result."
-        elif r_avr >= gain:
-            return x_info + u"Increase x to improve the game's result."  
-        elif gain >= self._best_x_gain:   
+        if gain >= l_max and gain >= r_max and gain >= self._best_x_gain:
             self._best_x_gain = gain
             self._best_x = x 
-            return x_info + u"This x may be the best one."
+            return u"There is high probability that this x is " + \
+                    "the best one." 
+        elif gain >= self._best_x_gain and \
+                ((l_max >= gain and l_max - gain <= self._delta and \
+                l_max >= r_max) or \
+                (r_max >= gain and r_max - gain <= self._delta and \
+                        r_max >= l_max)):
+                    return u"This x could be the best one."
+        elif gain >= self._best_x_gain and gain >= l_avr and gain >= r_avr: 
+            self._best_x_gain = gain
+            self._best_x = x 
+            return u"This x may be the best one."
+        elif l_avr > gain and l_max > gain and l_avr >= r_avr:
+            return x_info + u"Decrease x to improve the game's result."
+        elif r_avr > gain and r_max > gain and r_avr >= l_avr:
+            return x_info + u"Increase x to improve the game's result."  
+        elif l_avr > gain:
+            return x_info + u"Probably decrease x to improve the game's " +\
+                    "result."
+        elif r_avr > gain:
+            return x_info + u"Probably decrease x to improve the game's " +\
+                    "result."
+        elif fabs(l_avr - gain) > fabs(r_avr - gain):
+            return x_info + u"Maybe increase x to improve the game's " + \
+                    "result."
+        elif fabs(l_avr - gain) > fabs(r_avr - gain):
+            return x_info + u"Maybe decrease x to improve the game's " + \
+                    "result."
         else:
-            return x_info
+            return x_info + u"Try to alter the x to improve the game's " + \
+                    "result."
 
     def _get_Y_value(self):
         """Returns (pseudo-) random value of random variable Y."""
