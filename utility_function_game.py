@@ -126,8 +126,12 @@ class FortuneGame(object):
                     r_cnt += 1
                     if r_t >= r_max:
                         r_max = r_t
-        l_avr = l_sum / l_cnt
-        r_avr = r_sum / r_cnt
+        l_avr = 0
+        r_avr = 0
+        if l_cnt != 0:
+            l_avr = l_sum / l_cnt
+        if r_cnt != 0:
+            r_avr = r_sum / r_cnt
 
         if gain >= l_max and gain >= r_max and gain >= self._best_x_gain:
             self._best_x_gain = gain
