@@ -106,7 +106,7 @@ class UtilityFunctionBuilder(object):
             x4, ux4 = self._find_middle_point_and_utility(
                     x2, x3, ux2, ux3
                     )
-            result.append((x4, ux4))
+            #result.append((x4, ux4))
 
             if fabs(x1 - x4) <= delta:
                 # result with starting points
@@ -183,7 +183,7 @@ class UtilityFunctionBuilder(object):
         x4, ux4 = self._auto_find_middle_point_and_utility(
                 x2, x3, ux2, ux3, proportions[3]
                 )
-        result.append((x4, ux4))
+        #result.append((x4, ux4))
 
         # result with starting points
         data_for_recursion = list(result)
@@ -271,6 +271,7 @@ class UtilityFunctionBuilder(object):
 
     def _build_plot_from_results_list(self, results_list):
         """Actually draws the plot using data from results_list."""
+        print results_list
         # Preparing plot information
         plot_x_values = [element[0] for element in results_list]
         plot_y_values = [element[1] for element in results_list]
